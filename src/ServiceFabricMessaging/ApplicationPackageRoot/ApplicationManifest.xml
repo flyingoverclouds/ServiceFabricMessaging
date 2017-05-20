@@ -27,12 +27,14 @@
          The attribute ServiceTypeName below must match the name defined in the imported ServiceManifest.xml file. -->
     <Service Name="TenantService">
       <StatefulService ServiceTypeName="TenantServiceType" TargetReplicaSetSize="[TenantService_TargetReplicaSetSize]" MinReplicaSetSize="[TenantService_MinReplicaSetSize]">
-        <UniformInt64Partition PartitionCount="[TenantService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
+        <SingletonPartition />
+        <!--<UniformInt64Partition PartitionCount="[TenantService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />-->
       </StatefulService>
     </Service>
     <Service Name="QueueService">
       <StatefulService ServiceTypeName="QueueServiceType" TargetReplicaSetSize="[QueueService_TargetReplicaSetSize]" MinReplicaSetSize="[QueueService_MinReplicaSetSize]">
-        <UniformInt64Partition PartitionCount="[QueueService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
+        <SingletonPartition />
+        <!--<UniformInt64Partition PartitionCount="[QueueService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />-->
       </StatefulService>
     </Service>
   </DefaultServices>
