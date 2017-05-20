@@ -29,12 +29,12 @@
       <StatefulService ServiceTypeName="TenantServiceType" TargetReplicaSetSize="[TenantService_TargetReplicaSetSize]" MinReplicaSetSize="[TenantService_MinReplicaSetSize]">
         <SingletonPartition />
         <!--<UniformInt64Partition PartitionCount="[TenantService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />-->
+        <!--<UniformInt64Partition PartitionCount="[QueueService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />-->
       </StatefulService>
     </Service>
     <Service Name="Queue_T0001_Q0001">
       <StatefulService ServiceTypeName="QueueServiceType" TargetReplicaSetSize="[QueueService_TargetReplicaSetSize]" MinReplicaSetSize="[QueueService_MinReplicaSetSize]">
         <SingletonPartition />
-        <!--<UniformInt64Partition PartitionCount="[QueueService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />-->
       </StatefulService>
     </Service>
   </DefaultServices>
