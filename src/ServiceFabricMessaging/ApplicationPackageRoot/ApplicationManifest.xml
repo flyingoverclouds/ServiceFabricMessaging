@@ -2,11 +2,9 @@
 <ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ApplicationTypeName="ServiceFabricMessagingType" ApplicationTypeVersion="1.0.0" xmlns="http://schemas.microsoft.com/2011/01/fabric">
   <Parameters>
     <Parameter Name="TenantApiService_InstanceCount" DefaultValue="-1" />
-    <Parameter Name="TenantService_MinReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="TenantService_PartitionCount" DefaultValue="1" />
+    <Parameter Name="TenantService_MinReplicaSetSize" DefaultValue="1" />
     <Parameter Name="TenantService_TargetReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="QueueService_MinReplicaSetSize" DefaultValue="3" />
-    <Parameter Name="QueueService_PartitionCount" DefaultValue="1" />
+    <Parameter Name="QueueService_MinReplicaSetSize" DefaultValue="1" />
     <Parameter Name="QueueService_TargetReplicaSetSize" DefaultValue="3" />
   </Parameters>
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion 

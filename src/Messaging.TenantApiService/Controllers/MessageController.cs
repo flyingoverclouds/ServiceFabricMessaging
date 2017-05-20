@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.ServiceFabric.Services.Client;
+using Messaging.ServiceInterfaces;
+using Microsoft.ServiceFabric.Services.Remoting.Client;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace Messaging.TenantApiService.Controllers
 {
@@ -15,8 +17,24 @@ namespace Messaging.TenantApiService.Controllers
     public class MessageController : Controller
     {
         // HACK : hardcoded tenant name for start dev
+        const string applicationName = "ServiceFabricMessaging";
         const string tenantSvcName = "QT_T001";
-        const string queueSvcName = "QT_T001_queueDeTest";
+        //const string queueName = "queueDeTest";
+
+            
+        /// <summary>
+        /// Creation of a servicefabric remoting proxy to QueueService
+        /// </summary>
+        /// <returns></returns>
+        IQueueService GetQueueServiceProxy(string tenantName,string queueName)
+        {
+            // TODO : implement optionnal security on remoting endpoint
+            var svcUrl = $"fabric:/{applicationName}/{tenantName}_{queueName}";
+            var queueSvcProxy = ServiceProxy.Create<IQueueService>(new Uri(svcUrl), new ServicePartitionKey());
+            proxyQueueSvc = queueSvcProxy; 
+            return queueSvcProxy;
+        }
+
 
         /// <summary>
         /// Get a message from the queue. 
@@ -24,9 +42,11 @@ namespace Messaging.TenantApiService.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("GetMessage")]
-        public async Task<string> GetMessage()
+        public async Task<string> GetMessage([FromQuery]string queue)
         {
-            return "Message de l'api " + DateTime.Now.ToLongTimeString();
+            var queueSvcProxy = GetQueueServiceProxy(tenantSvcName,queue);
+            var msg = await queueSvcProxy.GetAsync("TEST").ConfigureAwait(false);
+            return (msg!=null)?msg.Payload:$"";
         }
 
 
@@ -35,11 +55,13 @@ namespace Messaging.TenantApiService.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [HttpGet("{id}")]
+        [HttpGet]
         [Route("DeleteMessage")]
-        public async Task<string> DeleteMessage(string id)
+        public async Task<string> DeleteMessage([FromQuery]string queue,[FromQuery]string popReceipt)
         {
-            return "Message de l'api " + DateTime.Now.ToLongTimeString();
+            var queueSvcProxy = GetQueueServiceProxy(tenantSvcName, queue);
+            var result = await queueSvcProxy.DeleteAsync(popReceipt);
+            return result.ToString();
         }
 
         /// <summary>
@@ -47,11 +69,17 @@ namespace Messaging.TenantApiService.Controllers
         /// </summary>
         /// <param name="payload"></param>
         /// <returns></returns>
-        [HttpGet("{payload}")]
+        [HttpGet]
         [Route("PutMessage")]
-        public async Task<string> PutMessage(string payload)
+        public async Task<string> PutMessage([FromQuery]string queue,[FromQuery]string payload,[FromQuery]string clientId)
         {
-            return "new message : " + payload;
+            var queueSvcProxy = GetQueueServiceProxy(tenantSvcName, queue);
+            var msg=await queueSvcProxy.PutAsync(payload + " " + DateTime.Now.ToLongTimeString(), clientId??"*unknow*").ConfigureAwait(false);
+            // TODO : check if null return (abnormal condition)
+
+            // TODO : return the MEssage as json
+            return $"{msg?.Id} {msg?.Payload}";
+            
         }
     }
 }

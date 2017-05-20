@@ -8,6 +8,7 @@ using Microsoft.ServiceFabric.Data.Collections;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using Messaging.ServiceInterfaces;
+using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 
 namespace Messaging.QueueService
 {
@@ -33,7 +34,12 @@ namespace Messaging.QueueService
         /// <returns>A collection of listeners.</returns>
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
-            return new ServiceReplicaListener[0];
+            // TODO : implement optionnal security on remoting endpoint
+            var listeners = new ServiceReplicaListener[1]  
+            {
+                new ServiceReplicaListener( (context) => this.CreateServiceRemotingListener(context), "ServiceEndpoint")
+            };
+            return listeners;
         }
 
         /// <summary>
@@ -43,28 +49,10 @@ namespace Messaging.QueueService
         /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service replica.</param>
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
-            // TODO: Replace the following sample code with your own logic 
-            //       or remove this RunAsync override if it's not needed in your service.
-
-            var myDictionary = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, long>>("myDictionary");
 
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-
-                using (var tx = this.StateManager.CreateTransaction())
-                {
-                    var result = await myDictionary.TryGetValueAsync(tx, "Counter");
-
-                    ServiceEventSource.Current.ServiceMessage(this.Context, "Current Counter Value: {0}",
-                        result.HasValue ? result.Value.ToString() : "Value does not exist.");
-
-                    await myDictionary.AddOrUpdateAsync(tx, "Counter", 0, (key, value) => ++value);
-
-                    // If an exception is thrown before calling CommitAsync, the transaction aborts, all changes are 
-                    // discarded, and nothing is saved to the secondary replicas.
-                    await tx.CommitAsync();
-                }
 
                 await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             }
@@ -93,15 +81,24 @@ namespace Messaging.QueueService
             return msg;
         }
 
+        /// <summary>
+        /// Pop a message from the queue if message are available, and feed 
+        /// </summary>
+        /// <param name="clientId"></param>
+        /// <returns></returns>
         public async Task<Message> GetAsync(string clientId)
         {
             var queue = await this.StateManager.GetOrAddAsync<IReliableQueue<Message>>("mainQueue").ConfigureAwait(false);
             using (var tx = this.StateManager.CreateTransaction())
             {
-                var msg = await queue.TryDequeueAsync(tx).ConfigureAwait(false);
-                // TODO add msg ID to popedMessageQueue
-                // TODO add msg to PopedMEssageDictionnary
-                await tx.CommitAsync().ConfigureAwait(false);
+                var msgCV = await queue.TryDequeueAsync(tx).ConfigureAwait(false);
+                if (msgCV.HasValue)
+                {
+                    // TODO add msg ID to popedMessageQueue
+                    // TODO add msg to PopedMEssageDictionnary
+                    await tx.CommitAsync().ConfigureAwait(false);
+                    return msgCV.Value;
+                }
             }
             return null;
         }
