@@ -31,7 +31,6 @@ namespace Messaging.TenantApiService.Controllers
             // TODO : implement optionnal security on remoting endpoint
             var svcUrl = $"fabric:/{applicationName}/{tenantName}_{queueName}";
             var queueSvcProxy = ServiceProxy.Create<IQueueService>(new Uri(svcUrl), new ServicePartitionKey());
-            proxyQueueSvc = queueSvcProxy; 
             return queueSvcProxy;
         }
 
