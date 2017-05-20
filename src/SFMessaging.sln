@@ -1,0 +1,63 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.6
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{B82F2385-CB46-4405-B180-3C957C67F407}"
+	ProjectSection(SolutionItems) = preProject
+		Documentation\index.md = Documentation\index.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{4D13D59E-92EA-4C31-85FC-269219E47716}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Messaging.ServiceInterfaces", "Messaging.ServiceInterfaces\Messaging.ServiceInterfaces.csproj", "{9318E9E2-3F06-4A91-8095-1DE382B61E38}"
+EndProject
+Project("{A07B5EB6-E848-4116-A8D0-A826331D98C6}") = "ServiceFabricMessaging", "ServiceFabricMessaging\ServiceFabricMessaging.sfproj", "{094919E4-6E74-4315-8056-613F56798A3E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Messaging.QueueService", "Messaging.QueueService\Messaging.QueueService.csproj", "{850FB211-4906-4D19-910E-13F70E5A814F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Messaging.TenantService", "Messaging.TenantService\Messaging.TenantService.csproj", "{701C86B9-76A6-48CD-8139-01AFC5333018}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9318E9E2-3F06-4A91-8095-1DE382B61E38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9318E9E2-3F06-4A91-8095-1DE382B61E38}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9318E9E2-3F06-4A91-8095-1DE382B61E38}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9318E9E2-3F06-4A91-8095-1DE382B61E38}.Debug|x64.Build.0 = Debug|Any CPU
+		{9318E9E2-3F06-4A91-8095-1DE382B61E38}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9318E9E2-3F06-4A91-8095-1DE382B61E38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9318E9E2-3F06-4A91-8095-1DE382B61E38}.Release|x64.ActiveCfg = Release|Any CPU
+		{9318E9E2-3F06-4A91-8095-1DE382B61E38}.Release|x64.Build.0 = Release|Any CPU
+		{094919E4-6E74-4315-8056-613F56798A3E}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{094919E4-6E74-4315-8056-613F56798A3E}.Debug|x64.ActiveCfg = Debug|x64
+		{094919E4-6E74-4315-8056-613F56798A3E}.Debug|x64.Build.0 = Debug|x64
+		{094919E4-6E74-4315-8056-613F56798A3E}.Debug|x64.Deploy.0 = Debug|x64
+		{094919E4-6E74-4315-8056-613F56798A3E}.Release|Any CPU.ActiveCfg = Release|x64
+		{094919E4-6E74-4315-8056-613F56798A3E}.Release|x64.ActiveCfg = Release|x64
+		{094919E4-6E74-4315-8056-613F56798A3E}.Release|x64.Build.0 = Release|x64
+		{094919E4-6E74-4315-8056-613F56798A3E}.Release|x64.Deploy.0 = Release|x64
+		{850FB211-4906-4D19-910E-13F70E5A814F}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{850FB211-4906-4D19-910E-13F70E5A814F}.Debug|Any CPU.Build.0 = Debug|x64
+		{850FB211-4906-4D19-910E-13F70E5A814F}.Debug|x64.ActiveCfg = Debug|x64
+		{850FB211-4906-4D19-910E-13F70E5A814F}.Debug|x64.Build.0 = Debug|x64
+		{850FB211-4906-4D19-910E-13F70E5A814F}.Release|Any CPU.ActiveCfg = Release|x64
+		{850FB211-4906-4D19-910E-13F70E5A814F}.Release|x64.ActiveCfg = Release|x64
+		{850FB211-4906-4D19-910E-13F70E5A814F}.Release|x64.Build.0 = Release|x64
+		{701C86B9-76A6-48CD-8139-01AFC5333018}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{701C86B9-76A6-48CD-8139-01AFC5333018}.Debug|Any CPU.Build.0 = Debug|x64
+		{701C86B9-76A6-48CD-8139-01AFC5333018}.Debug|x64.ActiveCfg = Debug|x64
+		{701C86B9-76A6-48CD-8139-01AFC5333018}.Debug|x64.Build.0 = Debug|x64
+		{701C86B9-76A6-48CD-8139-01AFC5333018}.Release|Any CPU.ActiveCfg = Release|x64
+		{701C86B9-76A6-48CD-8139-01AFC5333018}.Release|x64.ActiveCfg = Release|x64
+		{701C86B9-76A6-48CD-8139-01AFC5333018}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
