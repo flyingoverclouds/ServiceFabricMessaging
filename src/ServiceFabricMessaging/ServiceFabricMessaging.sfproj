@@ -31,6 +31,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Messaging.QueueService\Messaging.QueueService.csproj" />
+    <ProjectReference Include="..\Messaging.TenantApiService\Messaging.TenantApiService.csproj" />
     <ProjectReference Include="..\Messaging.TenantService\Messaging.TenantService.csproj" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />

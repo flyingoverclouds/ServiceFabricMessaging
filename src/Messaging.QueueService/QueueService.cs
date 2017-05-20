@@ -7,13 +7,18 @@ using System.Threading.Tasks;
 using Microsoft.ServiceFabric.Data.Collections;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
+using Messaging.ServiceInterfaces;
 
 namespace Messaging.QueueService
 {
     /// <summary>
     /// An instance of this class is created for each service replica by the Service Fabric runtime.
+    /// State description :
+    ///     - queue : main queue. It contains available message for Get/Peek
+    ///     - popedQueue : contains popreceipt+visibilityTime of poped message. This queue is used by the message autoreactivation  afetr timeout
+    ///     - popedMessages : dictionnary that contains poped message . Used for Delete & Update feature.
     /// </summary>
-    internal sealed class QueueService : StatefulService
+    internal sealed class QueueService : StatefulService, IQueueService
     {
         public QueueService(StatefulServiceContext context)
             : base(context)
@@ -64,5 +69,50 @@ namespace Messaging.QueueService
                 await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             }
         }
+
+
+        public async Task<Message> PutAsync(string messagePayload, string clientId)
+        {
+            var queue = await this.StateManager.GetOrAddAsync<IReliableQueue<Message>>("mainQueue").ConfigureAwait(false);
+            var msg = new Message()
+            {
+                Id = Guid.NewGuid().ToString(),
+                ClientId = clientId,
+                DequeueCount = 0,
+                InsertionDate = DateTime.UtcNow,
+                ExpirationDate=DateTime.MinValue,
+                NextVisibleDate=DateTime.MinValue,
+                Payload=messagePayload,
+                PopReceipt=null
+            };
+            using (var tx = this.StateManager.CreateTransaction())
+            {
+                await queue.EnqueueAsync(tx, msg).ConfigureAwait(false);
+                await tx.CommitAsync().ConfigureAwait(false);
+            }
+            return msg;
+        }
+
+        public async Task<Message> GetAsync(string clientId)
+        {
+            var queue = await this.StateManager.GetOrAddAsync<IReliableQueue<Message>>("mainQueue").ConfigureAwait(false);
+            using (var tx = this.StateManager.CreateTransaction())
+            {
+                var msg = await queue.TryDequeueAsync(tx).ConfigureAwait(false);
+                // TODO add msg ID to popedMessageQueue
+                // TODO add msg to PopedMEssageDictionnary
+                await tx.CommitAsync().ConfigureAwait(false);
+            }
+            return null;
+        }
+
+        public async Task<bool> DeleteAsync(string popReceipt)
+        {
+            // check ig message is in PopepMessageDictionnary.
+            throw new NotImplementedException();
+        }
+
+
+
     }
 }

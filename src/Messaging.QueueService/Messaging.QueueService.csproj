@@ -92,6 +92,12 @@
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Messaging.ServiceInterfaces\Messaging.ServiceInterfaces.csproj">
+      <Project>{9318E9E2-3F06-4A91-8095-1DE382B61E38}</Project>
+      <Name>Messaging.ServiceInterfaces</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
