@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.ServiceFabric.Services.Client;
 using Messaging.ServiceInterfaces;
 using Microsoft.ServiceFabric.Services.Remoting.Client;
-
+using Microsoft.AspNetCore.Authorization;
 
 namespace Messaging.TenantApiService.Controllers
 {

@@ -19,12 +19,12 @@ namespace Messaging.Admin
             string tenantKey2 = "9876543210";
 
             // http://localhost:8772/api/Message/GetMessage
-            TestGetPut1(tenantUrl, queueName, "CLI Test", 300);
+            TestGetPut1(tenantUrl, tenantKey1, queueName, "CLI Test", 50);
             Console.ReadLine();
         }
 
 
-        static void TestGetPut1(string baseUrl, string queueName,string clientId,int nbMessage)
+        static void TestGetPut1(string baseUrl,string tenantKey, string queueName,string clientId,int nbMessage)
         {
             string urlPut = $"{baseUrl}/api/Message/PutMessage?clientId={clientId}&queue={queueName}&payload=";
 
@@ -33,6 +33,7 @@ namespace Messaging.Admin
             Console.WriteLine($"Pushing {nbMessage} ...");
             Stopwatch chrono = Stopwatch.StartNew();
             WebClient wc = new WebClient();
+            wc.Headers.Add("Authorization", tenantKey);
             for (int n=0;n<nbMessage;n++)
             {
                 fullPutUrl = urlPut + $"Message {n} {DateTime.Now.ToLongTimeString()}";
