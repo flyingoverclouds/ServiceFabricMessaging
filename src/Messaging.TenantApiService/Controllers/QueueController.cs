@@ -16,38 +16,77 @@ namespace Messaging.TenantApiService.Controllers
     [Route("api/[Controller]")]
     public class QueueController : Controller
     {
-        // HACK : hardcoded tenant name for start dev
+        // HACK : hardcoded application and tenant name for start dev
+
+        // TODO : replace harcoded application with extraction from current Context
         const string applicationName = "ServiceFabricMessaging";
+
+        // TODO : replace harcoded tenant name with extraction from service name (and remove trailing _API), or from InitializationData
         const string tenantSvcName = "QT_T001";
 
-            
-        ///// <summary>
-        ///// Creation of a servicefabric remoting proxy to QueueService
-        ///// </summary>
-        ///// <returns></returns>
-        //IQueueService GetQueueServiceProxy(string tenantName,string queueName)
-        //{
-        //    // TODO : implement optionnal security on remoting endpoint
-        //    var svcUrl = $"fabric:/{applicationName}/{tenantName}_{queueName}";
-        //    var queueSvcProxy = ServiceProxy.Create<IQueueService>(new Uri(svcUrl), new ServicePartitionKey());
-        //    return queueSvcProxy;
-        //}
 
+        /// <summary>
+        /// Creation of a servicefabric remoting proxy to TenantService 
+        /// </summary>
+        /// <returns></returns>
+        ITenantService GetTenantServiceProxy(string tenantName)
+        {
+            // TODO : implement security on remoting endpoint
+
+            var svcUrl = $"fabric:/{applicationName}/{tenantName}";
+            var queueSvcProxy = ServiceProxy.Create<ITenantService>(new Uri(svcUrl), new ServicePartitionKey());
+            return queueSvcProxy;
+        }
 
         [HttpGet]
         [Route("Create")]
-        public async Task<string> Create([FromQuery]string newQueueName)
+        public async Task<IActionResult> Create([FromQuery]string queueName)
         {
-            return "Not implemented";
+            if (string.IsNullOrEmpty(queueName))
+            {
+                ServiceEventSource.Current.ServiceHostInitializationFailed($"QueueController:Create: Invalid queueName : {queueName}");
+                return BadRequest("invalid queueName");
+            }
+            try
+            {
+                var tenantProxy = GetTenantServiceProxy(tenantSvcName);
+                var res = await tenantProxy.CreateQueueAsync(queueName);
+                return Ok(res);
+            }
+            catch(Exception ex)
+            {
+                ServiceEventSource.Current.ServiceHostInitializationFailed($"QueueController:Create: unmanaged exception : {ex.ToString()}");
+
+                return StatusCode(500, "'Server Error. Logged and analysing ...");
+            }
         }
 
 
 
         [HttpGet]
         [Route("Delete")]
-        public async Task<string> Delete([FromQuery]string queueName)
+        public async Task<IActionResult> Remove([FromQuery]string queueName)
         {
-            return "Not implemented";
+            // TODO : Update Exception management to return http response
+            if (string.IsNullOrEmpty(queueName))
+            {
+                ServiceEventSource.Current.ServiceHostInitializationFailed($"QueueController:Create: Invalid queueName : {queueName}");
+                return BadRequest("invalid queueName");
+            }
+
+            try
+            {
+                var tenantProxy = GetTenantServiceProxy(tenantSvcName);
+                var res = await tenantProxy.DeleteQueueAsync(queueName);
+                return Ok(res);
+            }
+            catch (Exception ex)
+            {
+                ServiceEventSource.Current.ServiceHostInitializationFailed($"QueueController:Remove: unmanaged exception : {ex.ToString()}");
+                return StatusCode(500, "'Server Error. Logged and analysing ...");
+            }
+
+
         }
 
     }

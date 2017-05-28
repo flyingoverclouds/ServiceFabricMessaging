@@ -11,21 +11,76 @@ namespace Messaging.Admin
     class Program
     {
         static void Main(string[] args)
-        {
-            string tenantName = "Tenant_T0001";
-            string queueName = "queueDeTest";
-            string tenantUrl = "http://localhost:8772"; // url of tenant
-            string tenantKey1 = "0123456789";
-            string tenantKey2 = "9876543210";
+        {try
+            {
+                string tenantName = "Tenant_T0001";
+                string tenantUrl = "http://localhost:8772"; // url of tenant
+                string tenantKey1 = "0123456789";
+                string tenantKey2 = "9876543210";
 
-            // http://localhost:8772/api/Message/GetMessage
-            TestGetPut1(tenantUrl,tenantName, tenantKey1, queueName, "CLI Test", 50);
+                var rndQueueName = $"testQueue-NICO{Guid.NewGuid()}";
+
+                TestCreateQueue(tenantUrl, tenantName, tenantKey2, rndQueueName);
+                Console.WriteLine("Queue created. Press [Enter] key to continue");
+                Console.ReadLine();
+
+                TestGetPut1(tenantUrl, tenantName, tenantKey1, rndQueueName, "CLI Test", 50);
+                Console.WriteLine("Message test passed. Press [Enter] key to continue");
+                Console.ReadLine();
+
+                TestRemoveQueue(tenantUrl, tenantName, tenantKey1, rndQueueName);
+                Console.WriteLine("Queue removed. Press [Enter] key to continue");
+                Console.ReadLine();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine("\n\nEXCEPTION : " + ex.ToString());
+            }
+
             Console.ReadLine();
+        }
+
+
+        static void TestCreateQueue(string baseUrl, string tenantName, string tenantKey, string queueName)
+        {
+            string urlCreate = $"{baseUrl}/api/Queue/Create?queueName={queueName}";
+
+            string result;
+            Console.WriteLine($"Creating queue '{queueName}' ...");
+            Stopwatch chrono = Stopwatch.StartNew();
+            WebClient wc = new WebClient();
+            wc.Headers.Add("Authorization", $"DEBUGSharedKey {tenantName}:{tenantKey}"); // required
+            wc.Headers.Add("x-ms-date", DateTime.UtcNow.ToString("u")); // required
+            wc.Headers.Add("x-ms-version", "2015-12-11"); // optionnal
+            wc.Headers.Add("x-ms-client-request-id", Guid.NewGuid().ToString()); // optionnal
+            result = wc.DownloadString(urlCreate);
+            chrono.Stop();
+            Console.WriteLine($"Create queue ellapsed time : {chrono.ElapsedMilliseconds} ms");
+        }
+
+        static void TestRemoveQueue(string baseUrl, string tenantName, string tenantKey, string queueName)
+        {
+            string urlCreate = $"{baseUrl}/api/Queue/Remove?queueName={queueName}";
+
+            string result;
+            Console.WriteLine($"Removing queue '{queueName}' ...");
+            Stopwatch chrono = Stopwatch.StartNew();
+            WebClient wc = new WebClient();
+            wc.Headers.Add("Authorization", $"DEBUGSharedKey {tenantName}:{tenantKey}"); // required
+            wc.Headers.Add("x-ms-date", DateTime.UtcNow.ToString("u")); // required
+            wc.Headers.Add("x-ms-version", "2015-12-11"); // optionnal
+            wc.Headers.Add("x-ms-client-request-id", Guid.NewGuid().ToString()); // optionnal
+            result = wc.DownloadString(urlCreate);
+            chrono.Stop();
+            Console.WriteLine($"Create queue ellapsed time : {chrono.ElapsedMilliseconds} ms");
+
         }
 
 
         static void TestGetPut1(string baseUrl,string tenantName,string tenantKey, string queueName,string clientId,int nbMessage)
         {
+            // http://localhost:8772/api/Message/PutMessage
+
             string urlPut = $"{baseUrl}/api/Message/PutMessage?clientId={clientId}&queue={queueName}&payload=";
 
             string fullPutUrl;
@@ -47,6 +102,7 @@ namespace Messaging.Admin
 
             Console.WriteLine("");
             Console.WriteLine("Retrieving all messages ....");
+            // http://localhost:8772/api/Message/GetMessage
             string urlGet = $"{baseUrl}/api/Message/GetMessage?clientId={clientId}&queue={queueName}";
             chrono = Stopwatch.StartNew();
             result = wc.DownloadString(urlGet);

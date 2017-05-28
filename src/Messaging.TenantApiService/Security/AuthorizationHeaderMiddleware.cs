@@ -29,7 +29,7 @@ namespace Messaging.TenantApiService.Security
                 return;
             }
             // TODO : retrieve key from tenant configuration on service initialisation
-            if (!await CheckAuthorizationSignature(context.Response.Headers[AuthorizationHeaderName]))
+            if (!await CheckAuthorizationSignature(context.Request.Headers[AuthorizationHeaderName]))
             {
                 context.Response.StatusCode = 403; // access refused
                 return;
