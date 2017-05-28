@@ -36,7 +36,7 @@ namespace Messaging.TenantService
         {
             if (string.IsNullOrEmpty(queueName))
             {
-                ServiceEventSource.Current.ServiceMessage(this.Context,$"TenantService.CreateQueueAsunc() : invalid parametervalue queueName='{queueName}'");
+                ServiceEventSource.Current.ServiceMessage(this.Context,$"TenantService.CreateQueueAsync() : invalid parametervalue queueName='{queueName}'");
                 return false;
             }
             // TODO : add queuename charset check to avoid invalid service instance name
@@ -76,9 +76,29 @@ namespace Messaging.TenantService
 
         public async Task<bool> DeleteQueueAsync(string queueName)
         {
-            
-            // TODO : used service fabric management API to remove a new queue service instance
-            return false;
+            if (string.IsNullOrEmpty(queueName))
+            {
+                ServiceEventSource.Current.ServiceMessage(this.Context, $"TenantService.DeleteQueueAsync() : invalid parametervalue queueName='{queueName}'");
+                return false;
+            }
+
+            try
+            {
+
+                var newQueueSvcInstanceName = this.Context.ServiceName.ToString() + "_" + queueName; // get the tenant name
+                FabricClient fc = new FabricClient();
+                var dsdQueue = new System.Fabric.Description.DeleteServiceDescription(new Uri(newQueueSvcInstanceName));
+                await fc.ServiceManager.DeleteServiceAsync(dsdQueue);
+
+                // TODO : remove the queue name to the list of managed queue by this tenant instance
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ServiceEventSource.Current.ServiceMessage(this.Context, $"TenantService.CreateQueueAsunc() : EXCEPTION : {ex.ToString()}");
+                return false;
+            }
         }
 
         /// <summary>
@@ -105,25 +125,25 @@ namespace Messaging.TenantService
             // TODO: Replace the following sample code with your own logic 
             //       or remove this RunAsync override if it's not needed in your service.
 
-            var myDictionary = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, long>>("myDictionary");
+            //var myDictionary = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, long>>("myDictionary");
 
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                using (var tx = this.StateManager.CreateTransaction())
-                {
-                    var result = await myDictionary.TryGetValueAsync(tx, "Counter");
+                //using (var tx = this.StateManager.CreateTransaction())
+                //{
+                //    var result = await myDictionary.TryGetValueAsync(tx, "Counter");
 
-                    ServiceEventSource.Current.ServiceMessage(this.Context, "Current Counter Value: {0}",
-                        result.HasValue ? result.Value.ToString() : "Value does not exist.");
+                //    ServiceEventSource.Current.ServiceMessage(this.Context, "Current Counter Value: {0}",
+                //        result.HasValue ? result.Value.ToString() : "Value does not exist.");
 
-                    await myDictionary.AddOrUpdateAsync(tx, "Counter", 0, (key, value) => ++value);
+                //    await myDictionary.AddOrUpdateAsync(tx, "Counter", 0, (key, value) => ++value);
 
-                    // If an exception is thrown before calling CommitAsync, the transaction aborts, all changes are 
-                    // discarded, and nothing is saved to the secondary replicas.
-                    await tx.CommitAsync();
-                }
+                //    // If an exception is thrown before calling CommitAsync, the transaction aborts, all changes are 
+                //    // discarded, and nothing is saved to the secondary replicas.
+                //    await tx.CommitAsync();
+                //}
 
                 await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             }

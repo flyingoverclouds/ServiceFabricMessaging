@@ -64,7 +64,7 @@ namespace Messaging.TenantApiService.Controllers
 
 
         [HttpGet]
-        [Route("Delete")]
+        [Route("Remove")]
         public async Task<IActionResult> Remove([FromQuery]string queueName)
         {
             // TODO : Update Exception management to return http response

@@ -24,7 +24,7 @@ namespace Messaging.Admin
                 Console.WriteLine("Queue created. Press [Enter] key to continue");
                 Console.ReadLine();
 
-                TestGetPut1(tenantUrl, tenantName, tenantKey1, rndQueueName, "CLI Test", 50);
+                TestGetPut1(tenantUrl, tenantName, tenantKey1, rndQueueName, "CLI Test", 20);
                 Console.WriteLine("Message test passed. Press [Enter] key to continue");
                 Console.ReadLine();
 
@@ -79,8 +79,6 @@ namespace Messaging.Admin
 
         static void TestGetPut1(string baseUrl,string tenantName,string tenantKey, string queueName,string clientId,int nbMessage)
         {
-            // http://localhost:8772/api/Message/PutMessage
-
             string urlPut = $"{baseUrl}/api/Message/PutMessage?clientId={clientId}&queue={queueName}&payload=";
 
             string fullPutUrl;
@@ -102,7 +100,7 @@ namespace Messaging.Admin
 
             Console.WriteLine("");
             Console.WriteLine("Retrieving all messages ....");
-            // http://localhost:8772/api/Message/GetMessage
+
             string urlGet = $"{baseUrl}/api/Message/GetMessage?clientId={clientId}&queue={queueName}";
             chrono = Stopwatch.StartNew();
             result = wc.DownloadString(urlGet);
@@ -111,6 +109,7 @@ namespace Messaging.Admin
             {
                 count++;
                 result = wc.DownloadString(urlGet);
+                Console.WriteLine($"#{count} {result}");
             }
             chrono.Stop();
             Console.WriteLine($"Retrieved {count} messages");

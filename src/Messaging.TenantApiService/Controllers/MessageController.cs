@@ -41,11 +41,12 @@ namespace Messaging.TenantApiService.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("GetMessage")]
-        public async Task<string> GetMessage([FromQuery]string queue)
+        public async Task<IActionResult> GetMessage([FromQuery]string queue)
         {
             var queueSvcProxy = GetQueueServiceProxy(tenantSvcName,queue);
             var msg = await queueSvcProxy.GetAsync("TEST").ConfigureAwait(false);
-            return (msg!=null)?msg.Payload:$"";
+            var res = (msg != null) ? msg.Payload : $"";
+            return Ok(res);
         }
 
 
@@ -56,11 +57,11 @@ namespace Messaging.TenantApiService.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("DeleteMessage")]
-        public async Task<string> DeleteMessage([FromQuery]string queue,[FromQuery]string popReceipt)
+        public async Task<IActionResult> DeleteMessage([FromQuery]string queue,[FromQuery]string popReceipt)
         {
             var queueSvcProxy = GetQueueServiceProxy(tenantSvcName, queue);
             var result = await queueSvcProxy.DeleteAsync(popReceipt);
-            return result.ToString();
+            return Ok(result.ToString());
         }
 
         /// <summary>
@@ -70,14 +71,14 @@ namespace Messaging.TenantApiService.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("PutMessage")]
-        public async Task<string> PutMessage([FromQuery]string queue,[FromQuery]string payload,[FromQuery]string clientId)
+        public async Task<IActionResult> PutMessage([FromQuery]string queue,[FromQuery]string payload,[FromQuery]string clientId)
         {
             var queueSvcProxy = GetQueueServiceProxy(tenantSvcName, queue);
             var msg=await queueSvcProxy.PutAsync(payload + " " + DateTime.Now.ToLongTimeString(), clientId??"*unknow*").ConfigureAwait(false);
             // TODO : check if null return (abnormal condition)
 
             // TODO : return the MEssage as json
-            return $"{msg?.Id} {msg?.Payload}";
+            return Ok($"{msg?.Id} {msg?.Payload}");
             
         }
     }
