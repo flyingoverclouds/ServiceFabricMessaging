@@ -26,20 +26,24 @@ namespace Messaging.QueueService
         private const string SettingsDictionnaryName = "settings";
 
         private const string RetentionDurationSettingKey = "RetentionDuration";
+        private const int RetentionDurationDefaultValue = 7*24*60*60; // 7 days for default retention duration
+
         private const string DeleteDelaySettingKey = "DeleteDelay";
+        private const int DeleteDelayDefaultValue = 60; // 60sec for delete delay by default
+
 
 
         /// <summary>
         /// Cached value of message retention duration (default is 60sec) before message will expire and remove from the queue.
         /// </summary>
-        private int retentionDuration = 60;
+        private int retentionDuration = RetentionDurationDefaultValue;
 
 
         /// <summary>
         /// Cached value (default is 60sec) of delete delay. 
         /// Poped message not deleted after this delay will be send back to main queue
         /// </summary>
-        private int deleteDelay = 60;
+        private int deleteDelay = DeleteDelayDefaultValue;
 
         public QueueService(StatefulServiceContext context)
             : base(context)
@@ -69,8 +73,17 @@ namespace Messaging.QueueService
         /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service replica.</param>
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
-            // TODO : read setting value
+            // Reading settings value
+            var settings = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, string>>(SettingsDictionnaryName).ConfigureAwait(false);
+            using (var tx = this.StateManager.CreateTransaction())
+            {
+                retentionDuration = Convert.ToInt32(await settings.GetOrAddAsync(tx, RetentionDurationSettingKey,RetentionDurationDefaultValue.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false));
+                deleteDelay = Convert.ToInt32(await settings.GetOrAddAsync(tx, DeleteDelaySettingKey, DeleteDelayDefaultValue.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false));
+                await tx.CommitAsync().ConfigureAwait(false);
+            }
 
+
+            // main loop. waiting for remoting request
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -118,6 +131,7 @@ namespace Messaging.QueueService
         {
             ServiceEventSource.Current.ServiceRequestStart($"QueueService:GetAsync");
             var queue = await this.StateManager.GetOrAddAsync<IReliableQueue<Message>>(MessageQueueName).ConfigureAwait(false);
+            var utcNow = DateTime.UtcNow; 
             using (var tx = this.StateManager.CreateTransaction())
             {
                 var msgCV = await queue.TryDequeueAsync(tx).ConfigureAwait(false);
