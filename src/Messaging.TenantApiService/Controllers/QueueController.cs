@@ -126,6 +126,7 @@ namespace Messaging.TenantApiService.Controllers
             {
                 var queueProxy = GetQueueServiceProxy(tenantSvcName,queueName);
                 var res = await queueProxy.SetQueueRetentionTimeAsync(durationInSeconds,Guid.Empty);
+                ServiceEventSource.Current.ServiceRequestStop($"QueueController:SetRetentionTime: OK");
                 return Ok(res);
             }
             catch (Exception ex)
@@ -133,7 +134,6 @@ namespace Messaging.TenantApiService.Controllers
                 ServiceEventSource.Current.ServiceRequestStop($"QueueController:SetRetentionTime: unmanaged exception : {ex.ToString()}");
                 return StatusCode(500, "'Server Error. Logged and analysing ...");
             }
-
         }
     }
 }

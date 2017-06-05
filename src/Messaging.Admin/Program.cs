@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -71,7 +72,7 @@ namespace Messaging.Admin
  
         static void TestSetRetentionDurationQueue(string baseUrl, string tenantName, string tenantKey, string queueName,int secondsDuration)
         {
-            string urlCreate = $"{baseUrl}/api/Queue/SetRetentionTime?queueName={queueName}&";
+            string urlCreate = $"{baseUrl}/api/Queue/SetRetentionTime?queueName={queueName}&durationInSeconds={secondsDuration.ToString(CultureInfo.InvariantCulture)}";
 
             string result;
             Console.WriteLine($"Settings retention duration for queue'{queueName}' at {secondsDuration} ...");

@@ -9,6 +9,7 @@ using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using Messaging.ServiceInterfaces;
 using Microsoft.ServiceFabric.Services.Remoting.Runtime;
+using System.Globalization;
 
 namespace Messaging.QueueService
 {
@@ -24,11 +25,21 @@ namespace Messaging.QueueService
         private const string MessageQueueName = "mainQueue";
         private const string SettingsDictionnaryName = "settings";
 
+        private const string RetentionDurationSettingKey = "RetentionDuration";
+        private const string DeleteDelaySettingKey = "DeleteDelay";
+
+
         /// <summary>
-        /// duration of message retention before message can be send back to main queue
+        /// Cached value of message retention duration (default is 60sec) before message will expire and remove from the queue.
         /// </summary>
         private int retentionDuration = 60;
 
+
+        /// <summary>
+        /// Cached value (default is 60sec) of delete delay. 
+        /// Poped message not deleted after this delay will be send back to main queue
+        /// </summary>
+        private int deleteDelay = 60;
 
         public QueueService(StatefulServiceContext context)
             : base(context)
@@ -58,6 +69,7 @@ namespace Messaging.QueueService
         /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service replica.</param>
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
+            // TODO : read setting value
 
             while (true)
             {
@@ -67,18 +79,24 @@ namespace Messaging.QueueService
             }
         }
 
-
+        /// <summary>
+        /// Insert a message into the queu
+        /// </summary>
+        /// <param name="messagePayload"></param>
+        /// <param name="clientId"></param>
+        /// <returns></returns>
         public async Task<Message> PutAsync(string messagePayload, string clientId)
         {
             ServiceEventSource.Current.ServiceRequestStart($"QueueService:PutAsync");
             var queue = await this.StateManager.GetOrAddAsync<IReliableQueue<Message>>(MessageQueueName).ConfigureAwait(false);
+            var utcNow = DateTime.UtcNow;
             var msg = new Message()
             {
                 Id = Guid.NewGuid().ToString(),
                 ClientId = clientId,
                 DequeueCount = 0,
-                InsertionDate = DateTime.UtcNow,
-                ExpirationDate=DateTime.MinValue,
+                InsertionDate = utcNow,
+                ExpirationDate=utcNow.AddSeconds(this.retentionDuration),
                 NextVisibleDate=DateTime.MinValue,
                 Payload=messagePayload,
                 PopReceipt=null
@@ -105,8 +123,9 @@ namespace Messaging.QueueService
                 var msgCV = await queue.TryDequeueAsync(tx).ConfigureAwait(false);
                 if (msgCV.HasValue)
                 {
-                    // TODO add msg ID to popedMessageQueue
-                    // TODO add msg to PopedMEssageDictionnary
+                    // TODO : if message is expired --> ignored it and pop next message
+                    // TODO : add msg ID to popedMessageQueue
+                    // TODO : add msg to PopedMEssageDictionnary
                     await tx.CommitAsync().ConfigureAwait(false);
                     return msgCV.Value;
                 }
@@ -120,7 +139,6 @@ namespace Messaging.QueueService
 
             // TODO : implement delete poped message
 
-            // check if message is in PopepMessageDictionnary.
             throw new NotImplementedException();
         }
 
@@ -137,33 +155,23 @@ namespace Messaging.QueueService
 
             if (durationInSeconds < 0 || durationInSeconds > 2678400) // id duration is neg or higher than 31days --> error
             {
-                ServiceEventSource.Current.ServiceMessage(this.Context, $"QueueService.SetQueueRetentionTimeAsync() : invalid parametervalue durationInSeconds='{durationInSeconds}'");
+                ServiceEventSource.Current.ServiceRequestStop($"QueueService.SetQueueRetentionTimeAsync() : invalid parametervalue durationInSeconds='{durationInSeconds}'");
                 return false;
             }
 
-            this.retentionDuration = durationInSeconds;
+            this.retentionDuration = durationInSeconds; // update cached value
+            ServiceEventSource.Current.Message($"QueueService.SetQueueRetentionTimeAsync() : cached value updated.");
 
-
-            // TODO : store retention duration in queue setting dictionnary
-
-
-            //var queue = await this.StateManager.GetOrAddAsync<IReliableQueue<Message>>("mainQueue").ConfigureAwait(false);
-            //using (var tx = this.StateManager.CreateTransaction())
-            //{
-            //    var msgCV = await queue.TryDequeueAsync(tx).ConfigureAwait(false);
-            //    if (msgCV.HasValue)
-            //    {
-            //        // TODO add msg ID to popedMessageQueue
-            //        // TODO add msg to PopedMEssageDictionnary
-            //        await tx.CommitAsync().ConfigureAwait(false);
-            //        return msgCV.Value;
-            //    }
-            //}
-            //return null;
-
+            var settings = await this.StateManager.GetOrAddAsync<IReliableDictionary<string,string>>(SettingsDictionnaryName).ConfigureAwait(false);
+            using (var tx = this.StateManager.CreateTransaction())
+            {
+                await settings.AddOrUpdateAsync(tx, RetentionDurationSettingKey, 
+                    durationInSeconds.ToString(CultureInfo.InvariantCulture), 
+                    (k, v) => v = durationInSeconds.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false);
+                await tx.CommitAsync().ConfigureAwait(false);
+            }
+            ServiceEventSource.Current.ServiceRequestStop($"QueueService.SetQueueRetentionTimeAsync() : SUCCESS");
             return true;
-
-
         }
 
 
