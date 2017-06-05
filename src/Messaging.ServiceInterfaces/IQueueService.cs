@@ -30,6 +30,19 @@ namespace Messaging.ServiceInterfaces
         /// </summary>
         /// <param name="popReceipt">receipt of the Get operation</param>
         /// <returns>true : deletion succeeded, false otherwise (message back to queue or already deleted)</returns>
-        Task<bool> DeleteAsync(string popReceipt);   
+        Task<bool> DeleteAsync(string popReceipt);
+
+
+        /// <summary>
+        /// Define the retention time for message in the queue. 
+        /// Rentention time is a global settings for the queue. It impact all messages, including ones already in the queue
+        /// every message older will be removed from the queue (never dispatched)
+        /// </summary>
+        /// <param name="seconds">duration of message retention</param>
+        /// <param name="correlationId">correlationId to propagate</param>
+        /// <returns></returns>
+        Task<bool> SetQueueRetentionTimeAsync( int durationInSeconds, Guid correlationId);
+
+
     }
 }

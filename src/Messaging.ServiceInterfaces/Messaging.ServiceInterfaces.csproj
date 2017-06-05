@@ -81,7 +81,9 @@
     <Compile Include="IQueueService.cs" />
     <Compile Include="ITenantService.cs" />
     <Compile Include="Message.cs" />
+    <Compile Include="OperationResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="QueueOperationResult.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

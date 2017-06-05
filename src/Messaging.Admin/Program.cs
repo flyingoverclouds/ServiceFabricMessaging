@@ -24,6 +24,10 @@ namespace Messaging.Admin
                 Console.WriteLine("Queue created. Press [Enter] key to continue");
                 Console.ReadLine();
 
+                TestSetRetentionDurationQueue(tenantUrl,tenantName, tenantKey1,rndQueueName, 120);
+                Console.WriteLine("RetentionDuration set. Press [Enter] key to continue");
+                Console.ReadLine();
+
                 TestGetPut1(tenantUrl, tenantName, tenantKey1, rndQueueName, "CLI Test", 20);
                 Console.WriteLine("Message test passed. Press [Enter] key to continue");
                 Console.ReadLine();
@@ -40,6 +44,16 @@ namespace Messaging.Admin
             Console.ReadLine();
         }
 
+        private static WebClient BuildWebClient(string tenantName, string tenantKey)
+        {
+            WebClient wc = new WebClient();
+            wc.Headers.Add("Authorization", $"DEBUGSharedKey {tenantName}:{tenantKey}"); // required
+            wc.Headers.Add("x-ms-date", DateTime.UtcNow.ToString("u")); // required
+            wc.Headers.Add("x-ms-version", "2015-12-11"); // optionnal
+            wc.Headers.Add("x-ms-client-request-id", Guid.NewGuid().ToString()); // optionnal
+            return wc;
+        }
+
 
         static void TestCreateQueue(string baseUrl, string tenantName, string tenantKey, string queueName)
         {
@@ -48,15 +62,27 @@ namespace Messaging.Admin
             string result;
             Console.WriteLine($"Creating queue '{queueName}' ...");
             Stopwatch chrono = Stopwatch.StartNew();
-            WebClient wc = new WebClient();
-            wc.Headers.Add("Authorization", $"DEBUGSharedKey {tenantName}:{tenantKey}"); // required
-            wc.Headers.Add("x-ms-date", DateTime.UtcNow.ToString("u")); // required
-            wc.Headers.Add("x-ms-version", "2015-12-11"); // optionnal
-            wc.Headers.Add("x-ms-client-request-id", Guid.NewGuid().ToString()); // optionnal
+            WebClient wc = BuildWebClient(tenantName, tenantKey);
             result = wc.DownloadString(urlCreate);
             chrono.Stop();
             Console.WriteLine($"Create queue ellapsed time : {chrono.ElapsedMilliseconds} ms");
         }
+
+ 
+        static void TestSetRetentionDurationQueue(string baseUrl, string tenantName, string tenantKey, string queueName,int secondsDuration)
+        {
+            string urlCreate = $"{baseUrl}/api/Queue/SetRetentionTime?queueName={queueName}&";
+
+            string result;
+            Console.WriteLine($"Settings retention duration for queue'{queueName}' at {secondsDuration} ...");
+            Stopwatch chrono = Stopwatch.StartNew();
+            WebClient wc = BuildWebClient(tenantName, tenantKey);
+            result = wc.DownloadString(urlCreate);
+            chrono.Stop();
+            Console.WriteLine($"SetRentetionTime : ellapsed time : {chrono.ElapsedMilliseconds} ms");
+        }
+
+
 
         static void TestRemoveQueue(string baseUrl, string tenantName, string tenantKey, string queueName)
         {
@@ -65,15 +91,10 @@ namespace Messaging.Admin
             string result;
             Console.WriteLine($"Removing queue '{queueName}' ...");
             Stopwatch chrono = Stopwatch.StartNew();
-            WebClient wc = new WebClient();
-            wc.Headers.Add("Authorization", $"DEBUGSharedKey {tenantName}:{tenantKey}"); // required
-            wc.Headers.Add("x-ms-date", DateTime.UtcNow.ToString("u")); // required
-            wc.Headers.Add("x-ms-version", "2015-12-11"); // optionnal
-            wc.Headers.Add("x-ms-client-request-id", Guid.NewGuid().ToString()); // optionnal
+            WebClient wc = BuildWebClient(tenantName, tenantKey);
             result = wc.DownloadString(urlCreate);
             chrono.Stop();
             Console.WriteLine($"Create queue ellapsed time : {chrono.ElapsedMilliseconds} ms");
-
         }
 
 
@@ -85,13 +106,10 @@ namespace Messaging.Admin
             string result;
             Console.WriteLine($"Pushing {nbMessage} ...");
             Stopwatch chrono = Stopwatch.StartNew();
-            WebClient wc = new WebClient();
-            wc.Headers.Add("Authorization",$"DEBUGSharedKey {tenantName}:{tenantKey}"); // required
-            wc.Headers.Add("x-ms-date", DateTime.UtcNow.ToString("u")); // required
-            wc.Headers.Add("x-ms-version", "2015-12-11"); // optionnal
-            wc.Headers.Add("x-ms-client-request-id", Guid.NewGuid().ToString()); // optionnal
+            WebClient wc;
             for (int n=0;n<nbMessage;n++)
             {
+                wc = BuildWebClient(tenantName, tenantKey);
                 fullPutUrl = urlPut + $"Message {n} {DateTime.Now.ToLongTimeString()}";
                 result = wc.DownloadString(fullPutUrl);
             }
@@ -103,6 +121,7 @@ namespace Messaging.Admin
 
             string urlGet = $"{baseUrl}/api/Message/GetMessage?clientId={clientId}&queue={queueName}";
             chrono = Stopwatch.StartNew();
+            wc = BuildWebClient(tenantName, tenantKey);
             result = wc.DownloadString(urlGet);
             int count = 0;
             while (!string.IsNullOrEmpty(result))
@@ -114,8 +133,6 @@ namespace Messaging.Admin
             chrono.Stop();
             Console.WriteLine($"Retrieved {count} messages");
             Console.WriteLine($"Ellapsed time : {chrono.ElapsedMilliseconds}ms");
-
-
         }
 
     }

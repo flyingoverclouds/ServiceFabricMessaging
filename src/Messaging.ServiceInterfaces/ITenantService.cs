@@ -25,6 +25,5 @@ namespace Messaging.ServiceInterfaces
         /// <param name="queueName"></param>
         /// <returns></returns>
         Task<bool> DeleteQueueAsync(string queueName);
-
     }
 }

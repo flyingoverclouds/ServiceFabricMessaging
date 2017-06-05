@@ -21,6 +21,15 @@ namespace Messaging.QueueService
     /// </summary>
     internal sealed class QueueService : StatefulService, IQueueService
     {
+        private const string MessageQueueName = "mainQueue";
+        private const string SettingsDictionnaryName = "settings";
+
+        /// <summary>
+        /// duration of message retention before message can be send back to main queue
+        /// </summary>
+        private int retentionDuration = 60;
+
+
         public QueueService(StatefulServiceContext context)
             : base(context)
         { }
@@ -61,7 +70,8 @@ namespace Messaging.QueueService
 
         public async Task<Message> PutAsync(string messagePayload, string clientId)
         {
-            var queue = await this.StateManager.GetOrAddAsync<IReliableQueue<Message>>("mainQueue").ConfigureAwait(false);
+            ServiceEventSource.Current.ServiceRequestStart($"QueueService:PutAsync");
+            var queue = await this.StateManager.GetOrAddAsync<IReliableQueue<Message>>(MessageQueueName).ConfigureAwait(false);
             var msg = new Message()
             {
                 Id = Guid.NewGuid().ToString(),
@@ -88,7 +98,8 @@ namespace Messaging.QueueService
         /// <returns></returns>
         public async Task<Message> GetAsync(string clientId)
         {
-            var queue = await this.StateManager.GetOrAddAsync<IReliableQueue<Message>>("mainQueue").ConfigureAwait(false);
+            ServiceEventSource.Current.ServiceRequestStart($"QueueService:GetAsync");
+            var queue = await this.StateManager.GetOrAddAsync<IReliableQueue<Message>>(MessageQueueName).ConfigureAwait(false);
             using (var tx = this.StateManager.CreateTransaction())
             {
                 var msgCV = await queue.TryDequeueAsync(tx).ConfigureAwait(false);
@@ -105,10 +116,55 @@ namespace Messaging.QueueService
 
         public async Task<bool> DeleteAsync(string popReceipt)
         {
-            // check ig message is in PopepMessageDictionnary.
+            ServiceEventSource.Current.ServiceRequestStart($"QueueService:DeleteAsync");
+
+            // TODO : implement delete poped message
+
+            // check if message is in PopepMessageDictionnary.
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Implementation of IQueueService.SetQueueRetentionTimeAsync
+        /// </summary>
+        /// <param name="queueName"></param>
+        /// <param name="durationInSeconds"></param>
+        /// <param name="correlationId"></param>
+        /// <returns></returns>
+        public async Task<bool> SetQueueRetentionTimeAsync(int durationInSeconds, Guid correlationId)
+        {
+            ServiceEventSource.Current.ServiceRequestStart($"QueueService:SetQueueRetentionAsync");
+
+            if (durationInSeconds < 0 || durationInSeconds > 2678400) // id duration is neg or higher than 31days --> error
+            {
+                ServiceEventSource.Current.ServiceMessage(this.Context, $"QueueService.SetQueueRetentionTimeAsync() : invalid parametervalue durationInSeconds='{durationInSeconds}'");
+                return false;
+            }
+
+            this.retentionDuration = durationInSeconds;
+
+
+            // TODO : store retention duration in queue setting dictionnary
+
+
+            //var queue = await this.StateManager.GetOrAddAsync<IReliableQueue<Message>>("mainQueue").ConfigureAwait(false);
+            //using (var tx = this.StateManager.CreateTransaction())
+            //{
+            //    var msgCV = await queue.TryDequeueAsync(tx).ConfigureAwait(false);
+            //    if (msgCV.HasValue)
+            //    {
+            //        // TODO add msg ID to popedMessageQueue
+            //        // TODO add msg to PopedMEssageDictionnary
+            //        await tx.CommitAsync().ConfigureAwait(false);
+            //        return msgCV.Value;
+            //    }
+            //}
+            //return null;
+
+            return true;
+
+
+        }
 
 
     }

@@ -84,7 +84,6 @@ namespace Messaging.TenantService
 
             try
             {
-
                 var newQueueSvcInstanceName = this.Context.ServiceName.ToString() + "_" + queueName; // get the tenant name
                 FabricClient fc = new FabricClient();
                 var dsdQueue = new System.Fabric.Description.DeleteServiceDescription(new Uri(newQueueSvcInstanceName));
