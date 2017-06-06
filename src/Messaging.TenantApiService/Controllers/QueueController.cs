@@ -126,12 +126,42 @@ namespace Messaging.TenantApiService.Controllers
             {
                 var queueProxy = GetQueueServiceProxy(tenantSvcName,queueName);
                 var res = await queueProxy.SetQueueRetentionTimeAsync(durationInSeconds,Guid.Empty);
-                ServiceEventSource.Current.ServiceRequestStop($"QueueController:SetRetentionTime: OK");
+                ServiceEventSource.Current.ServiceRequestStop($"QueueController:SetRetentionTime: SUCCESS");
                 return Ok(res);
             }
             catch (Exception ex)
             {
                 ServiceEventSource.Current.ServiceRequestStop($"QueueController:SetRetentionTime: unmanaged exception : {ex.ToString()}");
+                return StatusCode(500, "'Server Error. Logged and analysing ...");
+            }
+        }
+
+        [HttpGet]
+        [Route("SetDeleteDelay")]
+        public async Task<IActionResult> SetDeleteDelay([FromQuery]string queueName, [FromQuery] int durationInSeconds)
+        {
+            ServiceEventSource.Current.ServiceRequestStart($"QueueController:SetDeleteDelay");
+            if (string.IsNullOrEmpty(queueName))
+            {
+                ServiceEventSource.Current.ServiceRequestStop($"QueueController:SetDeleteDelay: Invalid queueName : {queueName}");
+                return BadRequest("invalid queueName");
+            }
+            if (durationInSeconds < 1 || durationInSeconds > 24*60*60) // id duration is neg or higher than 24hours --> error
+            {
+                ServiceEventSource.Current.ServiceRequestStop($"QueueController:SetDeleteDelay: Invalid duration : {durationInSeconds}");
+                return BadRequest("invalid duration (should between 1sec and 1day)");
+            }
+
+            try
+            {
+                var queueProxy = GetQueueServiceProxy(tenantSvcName, queueName);
+                var res = await queueProxy.SetQueueRetentionTimeAsync(durationInSeconds, Guid.Empty);
+                ServiceEventSource.Current.ServiceRequestStop($"QueueController:SetDeleteDelay: SUCCESS");
+                return Ok(res);
+            }
+            catch (Exception ex)
+            {
+                ServiceEventSource.Current.ServiceRequestStop($"QueueController:SetDeleteDelay: unmanaged exception : {ex.ToString()}");
                 return StatusCode(500, "'Server Error. Logged and analysing ...");
             }
         }

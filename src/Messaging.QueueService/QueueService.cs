@@ -77,9 +77,17 @@ namespace Messaging.QueueService
             var settings = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, string>>(SettingsDictionnaryName).ConfigureAwait(false);
             using (var tx = this.StateManager.CreateTransaction())
             {
-                retentionDuration = Convert.ToInt32(await settings.GetOrAddAsync(tx, RetentionDurationSettingKey,RetentionDurationDefaultValue.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false));
-                deleteDelay = Convert.ToInt32(await settings.GetOrAddAsync(tx, DeleteDelaySettingKey, DeleteDelayDefaultValue.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false));
-                await tx.CommitAsync().ConfigureAwait(false);
+                try
+                {
+                    retentionDuration = Convert.ToInt32(await settings.GetOrAddAsync(tx, RetentionDurationSettingKey, RetentionDurationDefaultValue.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false));
+                    deleteDelay = Convert.ToInt32(await settings.GetOrAddAsync(tx, DeleteDelaySettingKey, DeleteDelayDefaultValue.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false));
+                    await tx.CommitAsync().ConfigureAwait(false);
+                }
+                catch(Exception ex)
+                {
+                    ServiceEventSource.Current.Message($"QueueService:Run : ERROR retrieving settings : EXCEPTION {ex}");
+                    tx.Abort();
+                }
             }
 
 
@@ -87,13 +95,12 @@ namespace Messaging.QueueService
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-
                 await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             }
         }
 
         /// <summary>
-        /// Insert a message into the queu
+        /// Insert a message into the queue
         /// </summary>
         /// <param name="messagePayload"></param>
         /// <param name="clientId"></param>
@@ -167,7 +174,7 @@ namespace Messaging.QueueService
         {
             ServiceEventSource.Current.ServiceRequestStart($"QueueService:SetQueueRetentionAsync");
 
-            if (durationInSeconds < 0 || durationInSeconds > 2678400) // id duration is neg or higher than 31days --> error
+            if (durationInSeconds < 1 || durationInSeconds > 2678400) // id duration is neg or higher than 31days --> error
             {
                 ServiceEventSource.Current.ServiceRequestStop($"QueueService.SetQueueRetentionTimeAsync() : invalid parametervalue durationInSeconds='{durationInSeconds}'");
                 return false;
@@ -188,6 +195,35 @@ namespace Messaging.QueueService
             return true;
         }
 
+        /// <summary>
+        /// implementation of IQueueService.SetQueueDeleteDelayAsync
+        /// </summary>
+        /// <param name="durationInSeconds"></param>
+        /// <param name="correlationId"></param>
+        /// <returns></returns>
+        public async Task<bool> SetQueueDeleteDelayAsync(int durationInSeconds, Guid correlationId)
+        {
+            ServiceEventSource.Current.ServiceRequestStart($"QueueService:SetQueueDeleteDelayAsync");
 
+            if (durationInSeconds < 1 || durationInSeconds > 24*60*60) // id duration is neg or higher than 31days --> error
+            {
+                ServiceEventSource.Current.ServiceRequestStop($"QueueService.SetQueueDeleteDelayAsync() : invalid parametervalue durationInSeconds='{durationInSeconds}'");
+                return false;
+            }
+
+            this.deleteDelay = durationInSeconds; // update cached value
+            ServiceEventSource.Current.Message($"QueueService.SetQueueDeleteDelayAsync() : cached value updated.");
+
+            var settings = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, string>>(SettingsDictionnaryName).ConfigureAwait(false);
+            using (var tx = this.StateManager.CreateTransaction())
+            {
+                await settings.AddOrUpdateAsync(tx, DeleteDelaySettingKey,
+                    durationInSeconds.ToString(CultureInfo.InvariantCulture),
+                    (k, v) => v = durationInSeconds.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false);
+                await tx.CommitAsync().ConfigureAwait(false);
+            }
+            ServiceEventSource.Current.ServiceRequestStop($"QueueService.SetQueueDeleteDelayAsync() : SUCCESS");
+            return true;
+        }
     }
 }

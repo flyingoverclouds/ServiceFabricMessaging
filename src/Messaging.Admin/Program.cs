@@ -25,7 +25,12 @@ namespace Messaging.Admin
                 Console.WriteLine("Queue created. Press [Enter] key to continue");
                 Console.ReadLine();
 
-                TestSetRetentionDurationQueue(tenantUrl,tenantName, tenantKey1,rndQueueName, 120);
+                TestSetDeleteDelay(tenantUrl, tenantName, tenantKey1, rndQueueName, 10);
+                Console.WriteLine("DeleteDelay set. Press [Enter] key to continue");
+                Console.ReadLine();
+
+
+                TestSetRetentionDuration(tenantUrl,tenantName, tenantKey1,rndQueueName, 1*24*60*60);
                 Console.WriteLine("RetentionDuration set. Press [Enter] key to continue");
                 Console.ReadLine();
 
@@ -70,7 +75,7 @@ namespace Messaging.Admin
         }
 
  
-        static void TestSetRetentionDurationQueue(string baseUrl, string tenantName, string tenantKey, string queueName,int secondsDuration)
+        static void TestSetRetentionDuration(string baseUrl, string tenantName, string tenantKey, string queueName,int secondsDuration)
         {
             string urlCreate = $"{baseUrl}/api/Queue/SetRetentionTime?queueName={queueName}&durationInSeconds={secondsDuration.ToString(CultureInfo.InvariantCulture)}";
 
@@ -80,10 +85,21 @@ namespace Messaging.Admin
             WebClient wc = BuildWebClient(tenantName, tenantKey);
             result = wc.DownloadString(urlCreate);
             chrono.Stop();
-            Console.WriteLine($"SetRentetionTime : ellapsed time : {chrono.ElapsedMilliseconds} ms");
+            Console.WriteLine($"SetRetentionTime : ellapsed time : {chrono.ElapsedMilliseconds} ms");
         }
 
+        static void TestSetDeleteDelay(string baseUrl, string tenantName, string tenantKey, string queueName, int secondsDuration)
+        {
+            string urlCreate = $"{baseUrl}/api/Queue/SetDeleteDelay?queueName={queueName}&durationInSeconds={secondsDuration.ToString(CultureInfo.InvariantCulture)}";
 
+            string result;
+            Console.WriteLine($"Settings delete delay for queue'{queueName}' at {secondsDuration} ...");
+            Stopwatch chrono = Stopwatch.StartNew();
+            WebClient wc = BuildWebClient(tenantName, tenantKey);
+            result = wc.DownloadString(urlCreate);
+            chrono.Stop();
+            Console.WriteLine($"SetDeleteDelay : ellapsed time : {chrono.ElapsedMilliseconds} ms");
+        }
 
         static void TestRemoveQueue(string baseUrl, string tenantName, string tenantKey, string queueName)
         {

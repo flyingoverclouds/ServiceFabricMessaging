@@ -43,6 +43,13 @@ namespace Messaging.ServiceInterfaces
         /// <returns></returns>
         Task<bool> SetQueueRetentionTimeAsync( int durationInSeconds, Guid correlationId);
 
-
+        /// <summary>
+        /// Define the delay before a poped message is send back to the queue if it was not deleted.
+        /// DeleteDelay time is a global settings for the queue. It impact all messages, including the ones already in WaitDelete state
+        /// </summary>
+        /// <param name="durationInSeconds"></param>
+        /// <param name="correlationId"></param>
+        /// <returns></returns>
+        Task<bool> SetQueueDeleteDelayAsync(int durationInSeconds, Guid correlationId);
     }
 }
