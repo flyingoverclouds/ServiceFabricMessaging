@@ -12,9 +12,10 @@ namespace Messaging.Admin
     class Program
     {
         static void Main(string[] args)
-        {try
+        {
+            try
             {
-                string tenantName = "Tenant_T0001";
+                string tenantName = "QT-T001-API";
                 string tenantUrl = "http://localhost:8772"; // url of tenant
                 string tenantKey1 = "0123456789";
                 string tenantKey2 = "9876543210";
@@ -28,7 +29,6 @@ namespace Messaging.Admin
                 TestSetDeleteDelay(tenantUrl, tenantName, tenantKey1, rndQueueName, 10);
                 Console.WriteLine("DeleteDelay set. Press [Enter] key to continue");
                 Console.ReadLine();
-
 
                 TestSetRetentionDuration(tenantUrl,tenantName, tenantKey1,rndQueueName, 1*24*60*60);
                 Console.WriteLine("RetentionDuration set. Press [Enter] key to continue");
@@ -101,18 +101,6 @@ namespace Messaging.Admin
             Console.WriteLine($"SetDeleteDelay : ellapsed time : {chrono.ElapsedMilliseconds} ms");
         }
 
-        static void TestRemoveQueue(string baseUrl, string tenantName, string tenantKey, string queueName)
-        {
-            string urlCreate = $"{baseUrl}/api/Queue/Remove?queueName={queueName}";
-
-            string result;
-            Console.WriteLine($"Removing queue '{queueName}' ...");
-            Stopwatch chrono = Stopwatch.StartNew();
-            WebClient wc = BuildWebClient(tenantName, tenantKey);
-            result = wc.DownloadString(urlCreate);
-            chrono.Stop();
-            Console.WriteLine($"Create queue ellapsed time : {chrono.ElapsedMilliseconds} ms");
-        }
 
 
         static void TestGetPut1(string baseUrl,string tenantName,string tenantKey, string queueName,string clientId,int nbMessage)
@@ -129,9 +117,11 @@ namespace Messaging.Admin
                 wc = BuildWebClient(tenantName, tenantKey);
                 fullPutUrl = urlPut + $"Message {n} {DateTime.Now.ToLongTimeString()}";
                 result = wc.DownloadString(fullPutUrl);
+                Console.WriteLine($"#{n} {result}");
             }
             chrono.Stop();
             Console.WriteLine($"Ellapsed time : {chrono.ElapsedMilliseconds}ms");
+            Console.WriteLine($"   Avg time   : {chrono.ElapsedMilliseconds / nbMessage} ms/push");
 
             Console.WriteLine("");
             Console.WriteLine("Retrieving all messages ....");
@@ -144,12 +134,26 @@ namespace Messaging.Admin
             while (!string.IsNullOrEmpty(result))
             {
                 count++;
-                result = wc.DownloadString(urlGet);
                 Console.WriteLine($"#{count} {result}");
+                result = wc.DownloadString(urlGet);
             }
             chrono.Stop();
             Console.WriteLine($"Retrieved {count} messages");
             Console.WriteLine($"Ellapsed time : {chrono.ElapsedMilliseconds}ms");
+            Console.WriteLine($"   Avg time   : {chrono.ElapsedMilliseconds / count} ms/pop");
+        }
+
+        static void TestRemoveQueue(string baseUrl, string tenantName, string tenantKey, string queueName)
+        {
+            string urlCreate = $"{baseUrl}/api/Queue/Remove?queueName={queueName}";
+
+            string result;
+            Console.WriteLine($"Removing queue '{queueName}' ...");
+            Stopwatch chrono = Stopwatch.StartNew();
+            WebClient wc = BuildWebClient(tenantName, tenantKey);
+            result = wc.DownloadString(urlCreate);
+            chrono.Stop();
+            Console.WriteLine($"Create queue ellapsed time : {chrono.ElapsedMilliseconds} ms");
         }
 
     }

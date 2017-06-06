@@ -22,7 +22,7 @@ namespace Messaging.TenantApiService.Controllers
         const string applicationName = "ServiceFabricMessaging";
 
         // TODO : replace harcoded tenant name with extraction from service name (and remove trailing _API), or from InitializationData
-        const string tenantSvcName = "QT_T001";
+        const string tenantSvcName = "QT-T001";
 
 
         /// <summary>

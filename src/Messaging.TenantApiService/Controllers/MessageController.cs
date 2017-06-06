@@ -18,8 +18,7 @@ namespace Messaging.TenantApiService.Controllers
     {
         // HACK : hardcoded tenant name for start dev
         const string applicationName = "ServiceFabricMessaging";
-        const string tenantSvcName = "QT_T001";
-        //const string queueName = "queueDeTest";
+        const string tenantSvcName = "QT-T001";
 
             
         /// <summary>
