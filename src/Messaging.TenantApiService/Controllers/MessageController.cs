@@ -17,8 +17,8 @@ namespace Messaging.TenantApiService.Controllers
     public class MessageController : Controller
     {
         // HACK : hardcoded tenant name for start dev
-        const string applicationName = "ServiceFabricMessaging";
-        const string tenantSvcName = "QT-T001";
+        const string applicationName = "ServiceFabricMessaging"; // HACK : to replace by a service setting or InitializationData
+        const string tenantSvcName = "QT-T001"; // HACK : to replace by a service setting or InitializationData
 
             
         /// <summary>
@@ -42,9 +42,17 @@ namespace Messaging.TenantApiService.Controllers
         [Route("GetMessage")]
         public async Task<IActionResult> GetMessage([FromQuery]string queue)
         {
+            ServiceEventSource.Current.ServiceRequestStart($"MessageController:GetMessage");
             var queueSvcProxy = GetQueueServiceProxy(tenantSvcName,queue);
             var msg = await queueSvcProxy.GetAsync("TEST").ConfigureAwait(false);
-            var res = (msg != null) ? msg.Payload : $"";
+
+            // TODO : replace res by a json model
+            string res = null; // HACK
+            if (msg!=null)
+                res=$"{msg?.Id} {msg?.Payload}";
+
+            ServiceEventSource.Current.ServiceRequestStop($"MessageController:GetMessage: ");
+
             return Ok(res);
         }
 
@@ -58,8 +66,10 @@ namespace Messaging.TenantApiService.Controllers
         [Route("DeleteMessage")]
         public async Task<IActionResult> DeleteMessage([FromQuery]string queue,[FromQuery]string popReceipt)
         {
+            ServiceEventSource.Current.ServiceRequestStart($"MessageController:DeleteMessage");
             var queueSvcProxy = GetQueueServiceProxy(tenantSvcName, queue);
             var result = await queueSvcProxy.DeleteAsync(popReceipt);
+            ServiceEventSource.Current.ServiceRequestStop($"MessageController:DeleteMessage: ");
             return Ok(result.ToString());
         }
 
@@ -72,11 +82,15 @@ namespace Messaging.TenantApiService.Controllers
         [Route("PutMessage")]
         public async Task<IActionResult> PutMessage([FromQuery]string queue,[FromQuery]string payload,[FromQuery]string clientId)
         {
+            ServiceEventSource.Current.ServiceRequestStart($"MessageController:PutMessage");
             var queueSvcProxy = GetQueueServiceProxy(tenantSvcName, queue);
             var msg=await queueSvcProxy.PutAsync(payload + " " + DateTime.Now.ToLongTimeString(), clientId??"*unknow*").ConfigureAwait(false);
+           
             // TODO : check if null return (abnormal condition)
 
             // TODO : return the MEssage as json
+
+            ServiceEventSource.Current.ServiceRequestStop($"MessageController:PutMessage: ");
             return Ok($"{msg?.Id} {msg?.Payload}");
             
         }

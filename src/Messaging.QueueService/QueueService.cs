@@ -13,6 +13,9 @@ using System.Globalization;
 
 namespace Messaging.QueueService
 {
+    // TODO : add an dequeue check to reactive poped message with requeue counter inc if no deletation confirmation
+
+
     /// <summary>
     /// An instance of this class is created for each service replica by the Service Fabric runtime.
     /// State description :
@@ -22,7 +25,9 @@ namespace Messaging.QueueService
     /// </summary>
     internal sealed class QueueService : StatefulService, IQueueService
     {
-        private const string MessageQueueName = "mainQueue";
+        private const string MessageQueueName = "messages";
+        private const string PoppedMessageQueueName = "poppedMessages";
+        private const string DeleteMessageDictionnaryName = "deletedMessages";
         private const string SettingsDictionnaryName = "settings";
 
         private const string RetentionDurationSettingKey = "RetentionDuration";
@@ -58,7 +63,7 @@ namespace Messaging.QueueService
         /// <returns>A collection of listeners.</returns>
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
-            // TODO : implement optionnal security on remoting endpoint
+            // TODO : implement security on remoting endpoint
             var listeners = new ServiceReplicaListener[1]  
             {
                 new ServiceReplicaListener( (context) => this.CreateServiceRemotingListener(context), "ServiceEndpoint")
@@ -73,6 +78,18 @@ namespace Messaging.QueueService
         /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service replica.</param>
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
+            await ReadSettingsValueAsync();
+            
+            // main loop. waiting for remoting request
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+            }
+        }
+
+        private async Task ReadSettingsValueAsync()
+        {
             // Reading settings value
             var settings = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, string>>(SettingsDictionnaryName).ConfigureAwait(false);
             using (var tx = this.StateManager.CreateTransaction())
@@ -83,19 +100,11 @@ namespace Messaging.QueueService
                     deleteDelay = Convert.ToInt32(await settings.GetOrAddAsync(tx, DeleteDelaySettingKey, DeleteDelayDefaultValue.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false));
                     await tx.CommitAsync().ConfigureAwait(false);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     ServiceEventSource.Current.Message($"QueueService:Run : ERROR retrieving settings : EXCEPTION {ex}");
                     tx.Abort();
                 }
-            }
-
-
-            // main loop. waiting for remoting request
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             }
         }
 
@@ -138,6 +147,9 @@ namespace Messaging.QueueService
         {
             ServiceEventSource.Current.ServiceRequestStart($"QueueService:GetAsync");
             var queue = await this.StateManager.GetOrAddAsync<IReliableQueue<Message>>(MessageQueueName).ConfigureAwait(false);
+            var popedQueue = await this.StateManager.GetOrAddAsync<IReliableQueue< Message>>(PoppedMessageQueueName).ConfigureAwait(false);
+            var popedDictionnary = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, bool>>(DeleteMessageDictionnaryName).ConfigureAwait(false);
+
             var utcNow = DateTime.UtcNow; 
             using (var tx = this.StateManager.CreateTransaction())
             {
@@ -145,10 +157,17 @@ namespace Messaging.QueueService
                 if (msgCV.HasValue)
                 {
                     // TODO : if message is expired --> ignored it and pop next message
-                    // TODO : add msg ID to popedMessageQueue
-                    // TODO : add msg to PopedMEssageDictionnary
+
+                    // TODO : if messageId is in deletedDictionnary with true flag : ignore it, delete the Id from the dictionnary and pop next message (delete has been confirmed)
+
+                    var popedMsg = msgCV.Value;
+                    popedMsg.NextVisibleDate = utcNow.AddSeconds(deleteDelay); // compute visibility deadline
+
+                    await popedQueue.EnqueueAsync(tx, popedMsg); // enqueue popped message to the delay queue
+                    await popedDictionnary.AddAsync(tx, popedMsg.Id, false); // store ID of popped (but not deleted) msg
+
                     await tx.CommitAsync().ConfigureAwait(false);
-                    return msgCV.Value;
+                    return popedMsg;
                 }
             }
             return null;
@@ -158,9 +177,19 @@ namespace Messaging.QueueService
         {
             ServiceEventSource.Current.ServiceRequestStart($"QueueService:DeleteAsync");
 
-            // TODO : implement delete poped message
-
-            throw new NotImplementedException();
+            var popedDictionnary = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, bool>>(DeleteMessageDictionnaryName).ConfigureAwait(false);
+            // set deleted flag message Id to tru in deletedMessageDictionnary
+            using (var tx = this.StateManager.CreateTransaction())
+            {
+                if (!await popedDictionnary.TryUpdateAsync(tx, popReceipt, true, true).ConfigureAwait(false))
+                {
+                    ServiceEventSource.Current.ServiceRequestStop($"QueueService:DeleteAsync : popRecript not FOUND");
+                    return false;
+                }
+                await tx.CommitAsync().ConfigureAwait(false);
+            }
+            ServiceEventSource.Current.ServiceRequestStop($"QueueService:DeleteAsync");
+            return true;
         }
 
         /// <summary>

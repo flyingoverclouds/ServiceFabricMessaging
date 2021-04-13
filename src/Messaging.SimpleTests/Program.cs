@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Messaging.SimpleTests
@@ -26,17 +27,8 @@ namespace Messaging.SimpleTests
                 Console.WriteLine("Queue created. Press [Enter] key to continue");
                 Console.ReadLine();
 
-                TestSetDeleteDelay(tenantUrl, tenantName, tenantKey1, rndQueueName, 10);
-                Console.WriteLine("DeleteDelay set. Press [Enter] key to continue");
-                Console.ReadLine();
-
-                TestSetRetentionDuration(tenantUrl, tenantName, tenantKey1, rndQueueName, 1 * 24 * 60 * 60);
-                Console.WriteLine("RetentionDuration set. Press [Enter] key to continue");
-                Console.ReadLine();
-
-                TestGetPut1(tenantUrl, tenantName, tenantKey1, rndQueueName, "CLI Test", 20);
-                Console.WriteLine("Message test passed. Press [Enter] key to continue");
-                Console.ReadLine();
+                //TestSequence1(tenantName, tenantUrl, tenantKey1, rndQueueName);
+                TestSequencePushGetDelete(tenantName, tenantUrl, tenantKey1, rndQueueName);
 
                 TestRemoveQueue(tenantUrl, tenantName, tenantKey1, rndQueueName);
                 Console.WriteLine("Queue removed. Press [Enter] key to continue");
@@ -46,7 +38,83 @@ namespace Messaging.SimpleTests
             {
                 Console.WriteLine("\n\nEXCEPTION : " + ex.ToString());
             }
+            
+        }
 
+#region Test Sequence PushGetDelete
+
+        private static void PushMessage(string tenantName, string tenantUrl, string tenantKey, string qName,string message)
+        {
+            Console.WriteLine($"Pushing message : '{message}'");
+            string urlPut = $"{tenantUrl}/api/Message/PutMessage?clientId=SimpleTests&queue={qName}&payload={message}";
+            
+            WebClient wc = BuildWebClient(tenantName, tenantKey);
+            var result = wc.DownloadString(urlPut);
+            Console.WriteLine("   result=" + result);
+        }
+
+        private static string GetMessage(string tenantName, string tenantUrl, string tenantKey, string qName)
+        {
+            Console.WriteLine($"Getting message ...");
+            string urlGet = $"{tenantUrl}/api/Message/GetMessage?clientId=SimpleTests&queue={qName}";
+
+            var  wc = BuildWebClient(tenantName, tenantKey);
+            var result = wc.DownloadString(urlGet);
+            return result;
+        }
+
+        private static void DeleteMessage(string tenantName, string tenantUrl, string tenantKey, string qName,string msgId)
+        {
+            Console.WriteLine($"Deleting message : '{msgId}'");
+            string urlGet = $"{tenantUrl}/api/Message/DeleteMessage?clientId=SimpleTests&queue={qName}&popReceipt={msgId}";
+
+            var wc = BuildWebClient(tenantName, tenantKey);
+            var result = wc.DownloadString(urlGet);
+            Console.WriteLine($"message [{msgId}] deleted with result : {result}");
+        }
+
+        private static void TestSequencePushGetDelete(string tenantName, string tenantUrl, string tenantKey, string qName)
+        {
+           
+            TestSetDeleteDelay(tenantUrl, tenantName, tenantKey, qName, 5); // 5 seconde delay
+
+            PushMessage(tenantName, tenantUrl, tenantKey, qName, "Message" + DateTime.Now.Ticks);
+            Thread.Sleep(2000);
+            var msg = GetMessage(tenantName, tenantUrl, tenantKey, qName);
+            if (!string.IsNullOrEmpty(msg))
+            { // HACK FOR TEST
+                Console.WriteLine($"Read message : {msg}");
+                var msgReceipt = msg.Substring(0, msg.IndexOf(' '));
+                Thread.Sleep(2000); // < 5 sec : msg will be really deleted.
+                DeleteMessage(tenantName, tenantUrl, tenantKey, qName, msgReceipt);
+                msg = GetMessage(tenantName, tenantUrl, tenantKey, qName);
+                Console.WriteLine($"Read message : {msg}");
+            }
+            else
+            {
+                Console.WriteLine("NO MESSAGE");
+            }
+            Console.WriteLine();
+            Console.WriteLine("PRess [enter] to continue ...");
+            Console.ReadLine();
+           
+
+        }
+
+        #endregion
+
+        private static void TestSequence1(string tenantName, string tenantUrl, string tenantKey1, string rndQueueName)
+        {
+            TestSetDeleteDelay(tenantUrl, tenantName, tenantKey1, rndQueueName, 10);
+            Console.WriteLine("DeleteDelay set. Press [Enter] key to continue");
+            Console.ReadLine();
+
+            TestSetRetentionDuration(tenantUrl, tenantName, tenantKey1, rndQueueName, 1 * 24 * 60 * 60);
+            Console.WriteLine("RetentionDuration set. Press [Enter] key to continue");
+            Console.ReadLine();
+
+            TestGetPut1(tenantUrl, tenantName, tenantKey1, rndQueueName, "CLI Test", 20);
+            Console.WriteLine("Message test passed. Press [Enter] key to continue");
             Console.ReadLine();
         }
 
